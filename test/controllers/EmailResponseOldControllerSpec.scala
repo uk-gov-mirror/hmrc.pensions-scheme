@@ -26,13 +26,12 @@ import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.Helpers.*
 import repositories.*
-import service.JsonCryptoService
-import uk.gov.hmrc.crypto.PlainText
+import uk.gov.hmrc.crypto.{ApplicationCrypto, PlainText}
 import uk.gov.hmrc.domain.PsaId
 
 import java.time.Instant
 
-class EmailResponseControllerSpec extends SpecBase with MockitoSugar {
+class EmailResponseOldControllerSpec extends SpecBase with MockitoSugar {
 
   val psa: PsaId = PsaId("A7654321")
   val fakeAuditService: StubSuccessfulAuditService = new StubSuccessfulAuditService()
@@ -44,8 +43,8 @@ class EmailResponseControllerSpec extends SpecBase with MockitoSugar {
       EmailEvent(Opened, Instant.now())
     ))
 
-  val crypto: JsonCryptoService = app.injector.instanceOf[JsonCryptoService]
-  val controller: EmailResponseController = app.injector.instanceOf[EmailResponseController]
+  val crypto: ApplicationCrypto = app.injector.instanceOf[ApplicationCrypto]
+  val controller: EmailResponseOldController = app.injector.instanceOf[EmailResponseOldController]
 
   protected override def bindings: Seq[GuiceableModule] =
     Seq(
@@ -62,7 +61,7 @@ class EmailResponseControllerSpec extends SpecBase with MockitoSugar {
   "EmailResponseController retrieveStatus" must {
     "respond OK when given EmailEvents" which {
       "will send events excluding Opened to audit service" in {
-        val encrypted = crypto.jsonCrypto.encrypt(PlainText(psa.id)).value
+        val encrypted = crypto.QueryParameterCrypto.encrypt(PlainText(psa.id)).value
         val result = controller.retrieveStatus(encrypted)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
         status(result) mustBe OK
@@ -75,7 +74,7 @@ class EmailResponseControllerSpec extends SpecBase with MockitoSugar {
     "respond with BAD_REQUEST when not given EmailEvents" in {
       fakeAuditService.reset()
 
-      val encrypted = crypto.jsonCrypto.encrypt(PlainText(psa.id)).value
+      val encrypted = crypto.QueryParameterCrypto.encrypt(PlainText(psa.id)).value
       val result = controller.retrieveStatus(encrypted)(fakeRequest.withBody(validJson))
 
       status(result) mustBe BAD_REQUEST
@@ -86,7 +85,7 @@ class EmailResponseControllerSpec extends SpecBase with MockitoSugar {
       "URL contains an id does not match PSAID pattern" in {
         fakeAuditService.reset()
 
-        val psa = crypto.jsonCrypto.encrypt(PlainText("psa")).value
+        val psa = crypto.QueryParameterCrypto.encrypt(PlainText("psa")).value
         val result = controller.retrieveStatus(psa)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
         status(result) mustBe FORBIDDEN
@@ -100,8 +99,8 @@ class EmailResponseControllerSpec extends SpecBase with MockitoSugar {
     "respond OK when given EmailEvents" which {
       "will send events excluding Opened to audit service" in {
         fakeAuditService.reset()
-        
-        val encrypted = crypto.jsonCrypto.encrypt(PlainText(psa.id)).value
+
+        val encrypted = crypto.QueryParameterCrypto.encrypt(PlainText(psa.id)).value
         val result = controller.retrieveStatusRacDac(encrypted)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
         status(result) mustBe OK
@@ -114,7 +113,7 @@ class EmailResponseControllerSpec extends SpecBase with MockitoSugar {
     "respond with BAD_REQUEST when not given EmailEvents" in {
       fakeAuditService.reset()
 
-      val encrypted = crypto.jsonCrypto.encrypt(PlainText(psa.id)).value
+      val encrypted = crypto.QueryParameterCrypto.encrypt(PlainText(psa.id)).value
       val result = controller.retrieveStatusRacDac(encrypted)(fakeRequest.withBody(validJson))
 
       status(result) mustBe BAD_REQUEST
@@ -125,7 +124,7 @@ class EmailResponseControllerSpec extends SpecBase with MockitoSugar {
       "URL contains an id does not match PSAID pattern" in {
         fakeAuditService.reset()
 
-        val psa = crypto.jsonCrypto.encrypt(PlainText("psa")).value
+        val psa = crypto.QueryParameterCrypto.encrypt(PlainText("psa")).value
         val result = controller.retrieveStatusRacDac(psa)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
         status(result) mustBe FORBIDDEN

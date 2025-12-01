@@ -21,7 +21,7 @@ import com.mongodb.client.model.FindOneAndUpdateOptions
 import config.AppConfig
 import models.*
 import org.mongodb.scala.model.*
-import org.mongodb.scala.{MongoCommandException, SingleObservableFuture}
+import org.mongodb.scala.MongoCommandException
 import play.api.libs.json.*
 import play.api.{Configuration, Logging}
 import uk.gov.hmrc.mongo.MongoComponent
@@ -31,7 +31,6 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
-
 
 object LockRepository {
   private[repositories] case class JsonDataEntry(psaId: String, srn: String, lastUpdated: Instant, expireAt: Instant)
@@ -81,9 +80,8 @@ class LockRepository @Inject()(configuration: Configuration,
   private val filterPsa = Filters.eq("psaId", _: String)
   private val filterSrn = Filters.eq("srn", _: String)
 
-  def releaseLock(lock: SchemeVariance): Future[Unit] = {
-    collection.deleteOne(Filters.and(filterPsa(lock.psaId), filterSrn(lock.srn))).toFuture().map(_ => ())
-  }
+  def releaseLock(lock: SchemeVariance): Future[Unit] =
+    Future.successful(collection.deleteOne(Filters.and(filterPsa(lock.psaId), filterSrn(lock.srn))).headOption().map(_ => ()))
 
   def getExistingLock(lock: SchemeVariance): Future[Option[SchemeVariance]] =
     collection.find(Filters.and(filterPsa(lock.psaId), filterSrn(lock.srn))).headOption()
@@ -117,7 +115,7 @@ class LockRepository @Inject()(configuration: Configuration,
       Filters.and(filterPsa(newLock.psaId), filterSrn(newLock.srn)),
       modifier,
       new FindOneAndUpdateOptions().upsert(true)
-    ).toFuture().map(_ => VarianceLock)
+    ).headOption().map(_ => VarianceLock)
       .recoverWith {
         case e: MongoCommandException if e.getCode == documentExistsErrorCode =>
           findLock(newLock.psaId, newLock.srn)

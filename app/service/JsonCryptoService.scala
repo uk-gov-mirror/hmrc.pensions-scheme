@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package bindings.provider
+package service
 
-import javax.inject.{Inject, Provider}
+import com.google.inject.Inject
 import play.api.Configuration
-import uk.gov.hmrc.crypto.ApplicationCrypto
+import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter, PlainContent, SymmetricCryptoFactory}
 
-class ApplicationCryptoProvider @Inject()(configuration: Configuration) extends Provider[ApplicationCrypto] {
-  def get(): ApplicationCrypto = new ApplicationCrypto(configuration.underlying)
+class JsonCryptoService @Inject()(config: Configuration) {
+
+  lazy val jsonCrypto: Encrypter & Decrypter =
+    SymmetricCryptoFactory.aesCryptoFromConfig(baseConfigKey = "queryParameter.encryption", config.underlying)
+
+  def encrypt(value: PlainContent): String = jsonCrypto.encrypt(value).value
+
+  def decrypt(value: Crypted): String = jsonCrypto.decrypt(value).value
 }

@@ -21,32 +21,31 @@ import com.google.inject.Inject
 import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.mvc.*
-import service.JsonCryptoService
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
-class EmailResponseController @Inject()(
+class EmailResponseOldController @Inject()(
                                          val auditService: AuditService,
-                                         jsonCrypto: JsonCryptoService,
+                                         applicationCrypto: ApplicationCrypto,
                                          cc: ControllerComponents,
                                          parsers: PlayBodyParsers
                                        )(implicit val ec: ExecutionContext)
   extends BackendController(cc) with AuditEmailStatus {
 
-  override protected val logger: Logger = Logger(classOf[EmailResponseController])
-  override protected val crypto: Encrypter & Decrypter = jsonCrypto.jsonCrypto
+  override protected val logger: Logger = Logger(classOf[EmailResponseOldController])
+  override protected val crypto: Encrypter & Decrypter = applicationCrypto.QueryParameterCrypto
 
   def retrieveStatus(id: String): Action[JsValue] = Action(parsers.tolerantJson) {
     implicit request =>
-      logger.warn("json encrypted psaId email status parameter")
+      logger.warn("application parameter encrypted psaId email status parameter")
       auditRetrieveStatus(id)
   }
 
   def retrieveStatusRacDac(id: String): Action[JsValue] = Action(parsers.tolerantJson) {
     implicit request =>
-      logger.warn("json encrypted psaId email status parameter")
+      logger.warn("application parameter encrypted psaId email status parameter")
       auditRetrieveStatusRacDac(id)
   }
 
