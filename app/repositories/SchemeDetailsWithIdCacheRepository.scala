@@ -19,7 +19,6 @@ package repositories
 import com.google.inject.Inject
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import models.SchemeWithId
-import org.mongodb.scala.SingleObservableFuture
 import org.mongodb.scala.model.*
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
 import play.api.libs.json.*
@@ -113,7 +112,7 @@ class SchemeDetailsWithIdCacheRepository @Inject()(
     )
 
     collection.withDocumentClass[DataCache]().findOneAndUpdate(Filters.equal(uniqueSchemeWithId, id), modifier,
-      new FindOneAndUpdateOptions().upsert(true)).toFuture().map(_ => true)
+      new FindOneAndUpdateOptions().upsert(true)).headOption().map(_ => true)
   }
 
   def get(schemeWithId: SchemeWithId): Future[Option[JsValue]] = {
